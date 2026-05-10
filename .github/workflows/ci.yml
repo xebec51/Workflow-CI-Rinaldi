@@ -26,15 +26,15 @@ jobs:
           pip install mlflow==2.19.0
           pip install pandas numpy scikit-learn matplotlib seaborn
 
-      - name: Run MLflow Project
+      - name: Run Training Pipeline
         run: |
           cd MLProject
-          mlflow run .
+          python modelling.py
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: trained-model-artifacts
           path: |
-            mlruns
+            MLProject
         continue-on-error: true
