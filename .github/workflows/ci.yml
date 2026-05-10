@@ -36,4 +36,5 @@ jobs:
         with:
           name: trained-model-artifacts
           path: |
-            MLProject/mlruns
+            mlruns
+        continue-on-error: true
