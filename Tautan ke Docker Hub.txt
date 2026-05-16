@@ -1,0 +1,2 @@
+Tautan Docker Hub Image:
+https://hub.docker.com/repository/docker/xebec51/heart-disease-model/general

@@ -22,8 +22,7 @@ jobs:
 
       - name: Run MLflow Project
         run: |
-          mlflow run MLProject --no-conda
-        # MLflow run akan menghasilkan output Run ID
+          mlflow run MLProject --env-manager local
 
       - name: Get Latest Run ID
         id: get_run_id
