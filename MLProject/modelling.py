@@ -3,9 +3,6 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 import mlflow
 import mlflow.sklearn
-import sklearn
-
-# Dilarang menggunakan mlflow.set_experiment() di sini
 
 with mlflow.start_run():
     # 1. Load Data
@@ -23,29 +20,10 @@ with mlflow.start_run():
     accuracy = accuracy_score(y_test, y_pred)
     mlflow.log_metric("accuracy", accuracy)
 
-    # 4. MEMAKSA LINGKUNGAN PYTHON DAN MENGABAIKAN CONDA TOS BUG
-    custom_env = {
-        # KUNCI PENANGKAL BUG: Tambahkan "nodefaults" agar Conda tidak meminta ToS
-        "channels": ["conda-forge", "nodefaults"],
-        "dependencies": [
-            "python=3.12.7",  
-            "pip",
-            {
-                "pip": [
-                    "mlflow==2.19.0",
-                    f"scikit-learn=={sklearn.__version__}",
-                    "pandas"
-                ]
-            },
-        ],
-        "name": "mlflow-env"
-    }
-
-    # 5. Log Model dengan menyuntikkan Custom Environment
+    # 4. Log Model (Sederhana dan Bersih)
     mlflow.sklearn.log_model(
         sk_model=model,
-        artifact_path="model",
-        conda_env=custom_env
+        artifact_path="model"
     )
 
-    print(f"Model CI berhasil dilatih dengan akurasi {accuracy:.4f} dan Environment Python 3.12.7 terkunci!")
+    print(f"Model CI berhasil dilatih dengan akurasi {accuracy:.4f} dan disimpan ke mlruns!")
