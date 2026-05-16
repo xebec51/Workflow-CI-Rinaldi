@@ -1,6 +1,5 @@
 name: Advanced MLOps CI Pipeline
 
-# Professional CI workflow tailored for Dicoding advanced rubric
 on:
   push:
     branches: [ main ]
@@ -14,10 +13,12 @@ jobs:
     env:
       # Docker repository target
       DOCKER_REPO: xebec51/heart-disease-model
+      # Membungkam warning Node.js 20 dari GitHub Actions
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
       # -----------------------------------------------------
-      # 1) Checkout repository (DIPERBARUI KE v4)
+      # 1) Checkout repository
       # -----------------------------------------------------
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -25,22 +26,13 @@ jobs:
           fetch-depth: 1
 
       # -----------------------------------------------------
-      # 2) Setup Python 3.12.7 and enable pip cache (DIPERBARUI KE v5)
+      # 2) Setup Python 3.12.7 (TANPA CACHE PIP)
       # -----------------------------------------------------
       - name: Setup Python 3.12.7
         uses: actions/setup-python@v5
         with:
           python-version: '3.12.7'
-          cache: 'pip'
-
-      # Optional: explicit pip cache restore (speeds up installs)
-      - name: Cache pip
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
+          # Baris cache sengaja DIHAPUS agar tidak error mencari requirements.txt
 
       # -----------------------------------------------------
       # 3) Check environment (sanity checks)
@@ -56,41 +48,25 @@ jobs:
 
       # -----------------------------------------------------
       # 4) Install core Python dependencies
-      #    (mlflow and essential libs required for training)
       # -----------------------------------------------------
       - name: Install core dependencies
         run: |
           echo "== Installing core Python packages =="
           python -m pip install --upgrade pip
-          pip install --upgrade pip setuptools wheel
+          pip install --upgrade setuptools wheel
           pip install mlflow==2.19.0 scikit-learn pandas
 
       # -----------------------------------------------------
-      # 5) (Optional) Install project-specific requirements
-      # -----------------------------------------------------
-      - name: Install project requirements (if present)
-        run: |
-          if [ -f "requirements.txt" ]; then
-            echo "== Installing requirements.txt =="
-            pip install -r requirements.txt
-          else
-            echo "== No requirements.txt found. Skipping. =="
-          fi
-
-      # -----------------------------------------------------
-      # 6) Run MLflow Project (train model)
-      #    This step must fail the job if training fails.
+      # 5) Run MLflow Project (train model)
       # -----------------------------------------------------
       - name: Run MLflow Project (training)
         id: run_mlflow
         run: |
           echo "== Running MLflow Project =="
-          # Run the MLProject directory using local env manager
           mlflow run MLProject --env-manager local
 
       # -----------------------------------------------------
-      # 7) Get latest MLflow Run ID (using robust bash find)
-      #    Save it as a step output `run_id` for later steps.
+      # 6) Get latest MLflow Run ID
       # -----------------------------------------------------
       - name: Get latest MLflow run id
         id: get_run
@@ -113,7 +89,7 @@ jobs:
           echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
 
       # -----------------------------------------------------
-      # 8) Upload MLflow artifacts (DIPERBARUI KE v4 - ANTI ERROR)
+      # 7) Upload MLflow artifacts
       # -----------------------------------------------------
       - name: Upload MLflow artifacts
         uses: actions/upload-artifact@v4
@@ -123,8 +99,7 @@ jobs:
           retention-days: 7
 
       # -----------------------------------------------------
-      # 9) Build Docker image from MLflow model
-      #    Uses the `runs:/<run_id>/model` URI to build image.
+      # 8) Build Docker image from MLflow model
       # -----------------------------------------------------
       - name: Build Docker image from MLflow model
         env:
@@ -133,11 +108,10 @@ jobs:
         run: |
           set -e
           echo "== Building Docker image from MLflow model (run: $RUN_ID) =="
-          # Use stable runs:/ URI which points to the model artifact path
           mlflow models build-docker -m "runs:/$RUN_ID/model" -n "${{ env.DOCKER_REPO }}:${IMAGE_TAG}"
 
       # -----------------------------------------------------
-      # 10) Login to Docker Hub using secrets (DIPERBARUI KE v3)
+      # 9) Login to Docker Hub
       # -----------------------------------------------------
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -146,7 +120,7 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       # -----------------------------------------------------
-      # 11) Push Docker image to Docker Hub (tagged)
+      # 10) Push Docker image to Docker Hub
       # -----------------------------------------------------
       - name: Push Docker image to Docker Hub
         env:
@@ -159,7 +133,7 @@ jobs:
           docker push "${{ env.DOCKER_REPO }}:latest"
 
       # -----------------------------------------------------
-      # 12) Final status and logs
+      # 11) Final status and logs
       # -----------------------------------------------------
       - name: Post pipeline status
         run: |
