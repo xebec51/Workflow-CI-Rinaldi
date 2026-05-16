@@ -11,44 +11,26 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      # Docker repository target
       DOCKER_REPO: xebec51/heart-disease-model
-      # Membungkam warning Node.js 20 dari GitHub Actions
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
-      # -----------------------------------------------------
-      # 1) Checkout repository
-      # -----------------------------------------------------
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
-      # -----------------------------------------------------
-      # 2) Setup Python 3.12.7 (TANPA CACHE PIP)
-      # -----------------------------------------------------
       - name: Setup Python 3.12.7
         uses: actions/setup-python@v5
         with:
           python-version: '3.12.7'
-          # Baris cache sengaja DIHAPUS agar tidak error mencari requirements.txt
 
-      # -----------------------------------------------------
-      # 3) Check environment (sanity checks)
-      # -----------------------------------------------------
       - name: Check environment
         run: |
           echo "== Environment check =="
           python --version
           pip --version
-          which python
-          pwd
-          ls -la
 
-      # -----------------------------------------------------
-      # 4) Install core Python dependencies
-      # -----------------------------------------------------
       - name: Install core dependencies
         run: |
           echo "== Installing core Python packages =="
@@ -56,24 +38,20 @@ jobs:
           pip install --upgrade setuptools wheel
           pip install mlflow==2.19.0 scikit-learn pandas
 
-      # -----------------------------------------------------
-      # 5) Run MLflow Project (train model)
-      # -----------------------------------------------------
       - name: Run MLflow Project (training)
         id: run_mlflow
         run: |
+          echo "== MEMBERSIHKAN MLRUNS LAMA == "
+          rm -rf mlruns MLProject/mlruns
+          
           echo "== Running MLflow Project =="
           mlflow run MLProject --env-manager local
 
-      # -----------------------------------------------------
-      # 6) Get latest MLflow Run ID
-      # -----------------------------------------------------
       - name: Get latest MLflow run id
         id: get_run
         run: |
           echo "== Locating latest MLflow run id =="
           
-          # Mencari path direktori yang bernama "model" di dalam mlruns
           MODEL_PATH=$(find mlruns -type d -name "model" | head -n 1)
           
           if [ -z "$MODEL_PATH" ]; then
@@ -81,16 +59,10 @@ jobs:
             exit 1
           fi
           
-          # Mengekstrak Run ID dari path (Format: mlruns/0/<RUN_ID>/artifacts/model)
           RUN_ID=$(echo "$MODEL_PATH" | awk -F/ '{print $3}')
           echo "Found run_id: $RUN_ID"
-          
-          # Menyimpan ke GITHUB_OUTPUT untuk bisa dipanggil di step lain
           echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
 
-      # -----------------------------------------------------
-      # 7) Upload MLflow artifacts
-      # -----------------------------------------------------
       - name: Upload MLflow artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -98,9 +70,6 @@ jobs:
           path: mlruns/**
           retention-days: 7
 
-      # -----------------------------------------------------
-      # 8) Build Docker image from MLflow model
-      # -----------------------------------------------------
       - name: Build Docker image from MLflow model
         env:
           RUN_ID: ${{ steps.get_run.outputs.run_id }}
@@ -110,18 +79,12 @@ jobs:
           echo "== Building Docker image from MLflow model (run: $RUN_ID) =="
           mlflow models build-docker -m "runs:/$RUN_ID/model" -n "${{ env.DOCKER_REPO }}:${IMAGE_TAG}"
 
-      # -----------------------------------------------------
-      # 9) Login to Docker Hub
-      # -----------------------------------------------------
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      # -----------------------------------------------------
-      # 10) Push Docker image to Docker Hub
-      # -----------------------------------------------------
       - name: Push Docker image to Docker Hub
         env:
           IMAGE_TAG: ${{ github.run_number }}
@@ -132,9 +95,6 @@ jobs:
           docker tag "${{ env.DOCKER_REPO }}:${IMAGE_TAG}" "${{ env.DOCKER_REPO }}:latest"
           docker push "${{ env.DOCKER_REPO }}:latest"
 
-      # -----------------------------------------------------
-      # 11) Final status and logs
-      # -----------------------------------------------------
       - name: Post pipeline status
         run: |
           echo "========================================================"
