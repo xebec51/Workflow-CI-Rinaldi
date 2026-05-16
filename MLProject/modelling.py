@@ -23,11 +23,12 @@ with mlflow.start_run():
     accuracy = accuracy_score(y_test, y_pred)
     mlflow.log_metric("accuracy", accuracy)
 
-    # 4. MEMAKSA LINGKUNGAN PYTHON 3.12.7 SECARA HARDCODE (SOLUSI DOCKER BUILD ERROR)
+    # 4. MEMAKSA LINGKUNGAN PYTHON DAN MENGABAIKAN CONDA TOS BUG
     custom_env = {
-        "channels": ["conda-forge"],
+        # KUNCI PENANGKAL BUG: Tambahkan "nodefaults" agar Conda tidak meminta ToS
+        "channels": ["conda-forge", "nodefaults"],
         "dependencies": [
-            "python=3.12.7",  # Kunci utamanya ada di sini!
+            "python=3.12.7",  
             "pip",
             {
                 "pip": [
