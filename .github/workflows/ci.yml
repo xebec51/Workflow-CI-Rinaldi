@@ -164,5 +164,5 @@ PY
           echo "========================================================"
           echo "PIPELINE: SUCCESS"
           echo "MLflow run id: ${{ steps.get_run.outputs.run_id }}"
-          echo "Docker images pushed: ${{ env.DOCKER_REPO }}:${{ github.run_number }} and ${ { env.DOCKER_REPO } }:latest"
+          echo "Docker images pushed: ${{ env.DOCKER_REPO }}:${{ github.run_number }} and ${{ env.DOCKER_REPO }}:latest"
           echo "========================================================"
