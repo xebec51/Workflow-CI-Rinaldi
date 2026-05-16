@@ -87,28 +87,28 @@ jobs:
           mlflow run MLProject --env-manager local
 
       # -----------------------------------------------------
-      # 7) Get latest MLflow Run ID (from local mlruns)
+      # 7) Get latest MLflow Run ID (using robust bash find)
       #    Save it as a step output `run_id` for later steps.
       # -----------------------------------------------------
       - name: Get latest MLflow run id
         id: get_run
         run: |
           echo "== Locating latest MLflow run id =="
-          python - <<'PY'
-import mlflow
-import os
-exp = mlflow.get_experiment_by_name('Default')
-if exp is None:
-    # fallback to experiment id 0
-    exp = mlflow.get_experiment(0)
-runs = mlflow.search_runs([exp.experiment_id], order_by=['attributes.start_time DESC'], max_results=1)
-if runs.empty:
-    raise SystemExit('No MLflow runs found')
-run_id = runs.loc[0,'run_id']
-print('Found run_id:', run_id)
-print(f"run_id={run_id}")
-open(os.environ['GITHUB_OUTPUT'],'a').write(f"run_id={run_id}\n")
-PY
+          
+          # Mencari path direktori yang bernama "model" di dalam mlruns
+          MODEL_PATH=$(find mlruns -type d -name "model" | head -n 1)
+          
+          if [ -z "$MODEL_PATH" ]; then
+            echo "ERROR: Direktori model tidak ditemukan di dalam mlruns!"
+            exit 1
+          fi
+          
+          # Mengekstrak Run ID dari path (Format: mlruns/0/<RUN_ID>/artifacts/model)
+          RUN_ID=$(echo "$MODEL_PATH" | awk -F/ '{print $3}')
+          echo "Found run_id: $RUN_ID"
+          
+          # Menyimpan ke GITHUB_OUTPUT untuk bisa dipanggil di step lain
+          echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
 
       # -----------------------------------------------------
       # 8) Upload MLflow artifacts (store in workflow artifacts)
