@@ -4,8 +4,6 @@ from sklearn.metrics import accuracy_score
 import mlflow
 import mlflow.sklearn
 
-mlflow.set_experiment("Heart Disease CI Pipeline")
-
 with mlflow.start_run():
     # 1. Load Data
     X_train = pd.read_csv("dataset_processed/X_train.csv")
