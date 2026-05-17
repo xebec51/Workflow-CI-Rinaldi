@@ -1,15 +1,19 @@
+import os
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 import mlflow
 import mlflow.sklearn
 
+# Mendapatkan direktori absolut dari lokasi file script ini berada
+base_dir = os.path.dirname(os.path.abspath(__file__))
+
 with mlflow.start_run():
-    # 1. Load Data
-    X_train = pd.read_csv("dataset_processed/X_train.csv")
-    X_test = pd.read_csv("dataset_processed/X_test.csv")
-    y_train = pd.read_csv("dataset_processed/y_train.csv").squeeze()
-    y_test = pd.read_csv("dataset_processed/y_test.csv").squeeze()
+    # 1. Load Data menggunakan Path Absolut
+    X_train = pd.read_csv(os.path.join(base_dir, "dataset_processed", "X_train.csv"))
+    X_test = pd.read_csv(os.path.join(base_dir, "dataset_processed", "X_test.csv"))
+    y_train = pd.read_csv(os.path.join(base_dir, "dataset_processed", "y_train.csv")).squeeze()
+    y_test = pd.read_csv(os.path.join(base_dir, "dataset_processed", "y_test.csv")).squeeze()
 
     # 2. Train Model
     model = RandomForestClassifier(n_estimators=100, max_depth=10, random_state=42)
@@ -20,7 +24,7 @@ with mlflow.start_run():
     accuracy = accuracy_score(y_test, y_pred)
     mlflow.log_metric("accuracy", accuracy)
 
-    # 4. Log Model (Sederhana dan Bersih)
+    # 4. Log Model
     mlflow.sklearn.log_model(
         sk_model=model,
         artifact_path="model"
